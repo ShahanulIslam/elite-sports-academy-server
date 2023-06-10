@@ -2,7 +2,7 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000;
 var jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 require('dotenv').config()
 
@@ -56,6 +56,19 @@ async function run() {
             res.send({ token })
         })
 
+
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== "admin") {
+                return res.status(403).send({ error: true, message: "Forbidden Access" })
+            }
+            next()
+        }
+
+
+
         app.get("/data", async (req, res) => {
             const cursor = classCollection.find();
             const result = await cursor.toArray()
@@ -63,7 +76,11 @@ async function run() {
         })
 
 
-        app.get("/users",  async (req, res) => {
+
+
+
+
+        app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
@@ -81,10 +98,58 @@ async function run() {
             res.send(result)
         });
 
-        app.post("/data",verifyJWT, async(req,res) =>{
+
+        app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (req.decoded.email !== email) {
+                res.send({ admin: false })
+            }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { admin: user?.role === "admin" }
+            res.send(result)
+        })
+
+
+        app.patch("/users/admin/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: "admin",
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+
+
+
+        app.post("/data", verifyJWT, async (req, res) => {
             const data = req.body;
             const result = await classCollection.insertOne(data);
             res.send(result);
+        })
+
+
+
+        
+        app.get("/data", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const query = { instructor_email: email };
+
+            // if (!email) {
+            //     res.send([])
+            // }
+            // const decodedEmail = req.decoded.email;
+            // if (email !== decodedEmail) {
+            //     return res.status(403).send({ error: true, message: "Forbidden Access" })
+            // }
+            console.log(email, query);
+            const result = await classCollection.find(query).toArray();
+            res.send(result)
         })
 
 
