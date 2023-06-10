@@ -79,6 +79,12 @@ async function run() {
 
             const result = await usersCollection.insertOne(user);
             res.send(result)
+        });
+
+        app.post("/data",verifyJWT, async(req,res) =>{
+            const data = req.body;
+            const result = await classCollection.insertOne(data);
+            res.send(result);
         })
 
 
