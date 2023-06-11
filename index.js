@@ -82,11 +82,11 @@ async function run() {
         // }
 
 
-        app.get("/data", async (req, res) => {
-            const cursor = classCollection.find();
-            const result = await cursor.toArray()
-            res.send(result)
-        })
+        // app.get("/data", async (req, res) => {
+        //     const cursor = classCollection.find();
+        //     const result = await cursor.toArray()
+        //     res.send(result)
+        // })
 
 
 
@@ -167,11 +167,28 @@ async function run() {
 
         // All Data
 
+
+        app.get('/alldata', async (req, res) => {
+            const result = await classCollection.find().toArray();
+            res.send(result);
+        });
+        
+
+        app.get('/data', async (req, res) => {
+            const result = await classCollection.find({ class_status: "approved" }).sort({ enrolled_class: -1 }).toArray();
+            res.send(result);
+        });
+
+
         app.post("/data", verifyJWT, async (req, res) => {
             const data = req.body;
             const result = await classCollection.insertOne(data);
             res.send(result);
         })
+
+        
+
+
 
 
         app.get("/myclass", verifyJWT, async (req, res) => {
@@ -218,34 +235,18 @@ async function run() {
 
 
 
-        // Set Status Approve
-
-        app.patch("/data/:status", async (req, res) => {
-            const status = req.params.status;
-            console.log(status);
-            const filter = { class_status: status };
+        // Update Status 
+        app.patch('/classes/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                    class_status: "approved",
+                    class_status: req.body.class_status,
                 },
             };
             const result = await classCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
-
-        app.patch("/deny/:status", async (req, res) => {
-            const status = req.params.status;
-            console.log(status);
-            const filter = { class_status: status };
-            const updateDoc = {
-                $set: {
-                    class_status: "denied",
-                },
-            };
-            const result = await classCollection.updateOne(filter, updateDoc);
-            res.send(result);
-        });
-
 
         // update classCollection by admin feedback
 
@@ -258,7 +259,6 @@ async function run() {
                     feedback: feedback,
                 },
             };
-
             const result = await classCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
@@ -283,6 +283,12 @@ async function run() {
             const result = await paymentsCollection.insertOne(payment);
             res.send(result);
         });
+
+
+        app.get("/enrolled-class", async (req, res) => {
+            const result = await paymentsCollection.find().toArray();
+            res.send(result)
+        })
 
 
         // Connect the client to the server	(optional starting in v4.7)
