@@ -47,6 +47,7 @@ async function run() {
 
         const classCollection = client.db("sportsDB").collection("class");
         const usersCollection = client.db("sportsDB").collection("users");
+        const selectedClassCollection = client.db("sportsDB").collection("selectedClass")
 
 
 
@@ -68,15 +69,22 @@ async function run() {
         }
 
 
+        // const verifyInstructor = async (req, res, next) => {
+        //     const email = req.decoded.email;
+        //     const query = { email: email };
+        //     const user = await usersCollection.findOne(query);
+        //     if (user?.role !== "admin") {
+        //         return res.status(403).send({ error: true, message: "Forbidden Access" })
+        //     }
+        //     next()
+        // }
+
 
         app.get("/data", async (req, res) => {
             const cursor = classCollection.find();
             const result = await cursor.toArray()
             res.send(result)
         })
-
-
-
 
 
 
@@ -98,6 +106,8 @@ async function run() {
             res.send(result)
         });
 
+
+        //  Set Admin Role
 
         app.get("/users/admin/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
@@ -125,6 +135,7 @@ async function run() {
         });
 
 
+        // Set Instructor Roll
 
         app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
@@ -159,8 +170,6 @@ async function run() {
         })
 
 
-
-
         app.get("/data", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { instructor_email: email };
@@ -177,6 +186,22 @@ async function run() {
             res.send(result)
         })
 
+
+        app.post("/selected-class", async (req, res) => {
+            const selectedClass = req.body;
+            const result = await selectedClassCollection.insertOne(selectedClass);
+            res.send(result)
+        })
+
+
+        app.get('/selected-class',  async (req, res) => {
+            const email = req.query.email;
+
+
+            const query = { userEmail: email };
+            const result = await selectedClassCollection.find(query).toArray();
+            res.send(result);
+        })
 
 
 
