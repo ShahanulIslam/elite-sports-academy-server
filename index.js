@@ -194,9 +194,8 @@ async function run() {
         })
 
 
-        app.get('/selected-class',  async (req, res) => {
+        app.get('/selected-class', async (req, res) => {
             const email = req.query.email;
-
 
             const query = { userEmail: email };
             const result = await selectedClassCollection.find(query).toArray();
@@ -209,6 +208,36 @@ async function run() {
             const result = await selectedClassCollection.deleteOne(query);
             res.send(result);
         })
+
+
+
+        // Set Status Approve
+
+        app.patch("/data/:status", async (req, res) => {
+            const status = req.params.status;
+            console.log(status);
+            const filter = { class_status: status };
+            const updateDoc = {
+                $set: {
+                    class_status: "approved",
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+        app.patch("/deny/:status", async (req, res) => {
+            const status = req.params.status;
+            console.log(status);
+            const filter = { class_status: status };
+            const updateDoc = {
+                $set: {
+                    class_status: "denied",
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
 
 
 
