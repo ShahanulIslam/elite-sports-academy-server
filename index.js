@@ -3,8 +3,9 @@ const app = express()
 const port = process.env.PORT || 5000;
 var jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors')
-require('dotenv').config()
+const cors = require('cors');
+require('dotenv').config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // Middleware
 app.use(cors());
@@ -48,6 +49,7 @@ async function run() {
         const classCollection = client.db("sportsDB").collection("class");
         const usersCollection = client.db("sportsDB").collection("users");
         const selectedClassCollection = client.db("sportsDB").collection("selectedClass")
+        const paymentsCollection = client.db("sportsDB").collection("payment")
 
 
 
@@ -163,6 +165,8 @@ async function run() {
         });
 
 
+        // All Data
+
         app.post("/data", verifyJWT, async (req, res) => {
             const data = req.body;
             const result = await classCollection.insertOne(data);
@@ -170,22 +174,25 @@ async function run() {
         })
 
 
-        app.get("/data", verifyJWT, async (req, res) => {
+        app.get("/myclass", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { instructor_email: email };
 
-            // if (!email) {
-            //     res.send([])
-            // }
-            // const decodedEmail = req.decoded.email;
-            // if (email !== decodedEmail) {
-            //     return res.status(403).send({ error: true, message: "Forbidden Access" })
-            // }
+            if (!email) {
+                res.send([])
+            }
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: "Forbidden Access" })
+            }
             console.log(email, query);
             const result = await classCollection.find(query).toArray();
             res.send(result)
         })
 
+
+
+        // Selected Class 
 
         app.post("/selected-class", async (req, res) => {
             const selectedClass = req.body;
@@ -240,6 +247,42 @@ async function run() {
         });
 
 
+        // update classCollection by admin feedback
+
+        app.patch("/insertFeedback/:id", async (req, res) => {
+            const id = req.params.id;
+            const feedback = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    feedback: feedback,
+                },
+            };
+
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+
+        // payment related api
+
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: price * amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
+
+
+        app.post("/paymenthistory", verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            res.send(result);
+        });
 
 
         // Connect the client to the server	(optional starting in v4.7)
