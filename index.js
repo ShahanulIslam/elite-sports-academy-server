@@ -71,24 +71,6 @@ async function run() {
         }
 
 
-        // const verifyInstructor = async (req, res, next) => {
-        //     const email = req.decoded.email;
-        //     const query = { email: email };
-        //     const user = await usersCollection.findOne(query);
-        //     if (user?.role !== "admin") {
-        //         return res.status(403).send({ error: true, message: "Forbidden Access" })
-        //     }
-        //     next()
-        // }
-
-
-        // app.get("/data", async (req, res) => {
-        //     const cursor = classCollection.find();
-        //     const result = await cursor.toArray()
-        //     res.send(result)
-        // })
-
-
 
         app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
@@ -172,7 +154,7 @@ async function run() {
             const result = await classCollection.find().toArray();
             res.send(result);
         });
-        
+
 
         app.get('/data', async (req, res) => {
             const result = await classCollection.find({ class_status: "approved" }).sort({ enrolled_class: -1 }).toArray();
@@ -185,8 +167,6 @@ async function run() {
             const result = await classCollection.insertOne(data);
             res.send(result);
         })
-
-        
 
 
 
@@ -225,6 +205,7 @@ async function run() {
             const result = await selectedClassCollection.find(query).toArray();
             res.send(result);
         })
+
 
         app.delete("/selected-class/:id", async (req, res) => {
             const id = req.params.id;
@@ -284,12 +265,10 @@ async function run() {
             res.send(result);
         });
 
-
         app.get("/enrolled-class", async (req, res) => {
-            const result = await paymentsCollection.find().toArray();
-            res.send(result)
-        })
-
+            const result = await paymentsCollection.find().sort({ transectionId: -1 }).toArray();
+            res.send(result);
+        });
 
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
